@@ -85,6 +85,8 @@ void cutlass_chunk_prefill_impl(
     std::optional<const at::Tensor>& is_prefill) {
   // general params
   int batch_size, num_heads_q, num_heads_kv, head_size;
+  // V/O head dim, may differ from QK head_size for asymmetric attention.
+  int v_head_size = value_cache.size(-1);
   // additional params
   int total_seqlen_q, total_seqlen_k;
   int num_blocks, block_size, max_blocks_per_seq;
@@ -148,6 +150,7 @@ void cutlass_chunk_prefill_impl(
       num_heads_q,
       num_heads_kv,
       head_size,
+      v_head_size,
       max_blocks_per_seq,
       block_size,
       window_size_left,

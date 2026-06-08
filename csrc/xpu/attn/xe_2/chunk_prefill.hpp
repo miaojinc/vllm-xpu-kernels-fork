@@ -43,6 +43,9 @@ struct chunk_prefill_args_t {
   int num_heads_q;
   int num_heads_k;
   int head_size;
+  // V/O head dim; may differ from head_size (QK) for asymmetric attention
+  // (e.g. MiMo: QK=192, V=128). Defaults to head_size for symmetric models.
+  int v_head_size;
   int max_blocks_per_seq;
   int block_size;
   int window_size_left = -1;
@@ -111,7 +114,7 @@ struct KernelLauncher {
     auto head_size_qk = shape.head_size_qk = shape_init.head_size_qk =
         args.head_size;
     auto head_size_vo = shape.head_size_vo = shape_init.head_size_vo =
-        args.head_size;
+        args.v_head_size;
 
     if constexpr (isVarLen) {
       batch = shape_init.batch = 1;
