@@ -301,15 +301,29 @@ void cutlass_chunk_prefill_impl(
           is_sink,
           is_lse);
     } else if (args.head_size <= HEAD_SIZE_LIMIT_3) {
-      policy_dispatch_func<chunk_policy_head192_b16>(
-          queue,
-          cuQKType,
-          args,
-          is_paged,
-          is_causal,
-          is_local,
-          is_sink,
-          is_lse);
+      // Asymmetric QK=192 / V=128 (e.g. MiMo) uses a tile whose output width
+      // follows V; symmetric V=192 keeps the standard policy.
+      if (args.head_size == 192 && args.v_head_size == 128) {
+        policy_dispatch_func<chunk_policy_head192_vo128_b16>(
+            queue,
+            cuQKType,
+            args,
+            is_paged,
+            is_causal,
+            is_local,
+            is_sink,
+            is_lse);
+      } else {
+        policy_dispatch_func<chunk_policy_head192_b16>(
+            queue,
+            cuQKType,
+            args,
+            is_paged,
+            is_causal,
+            is_local,
+            is_sink,
+            is_lse);
+      }
     } else if (args.head_size <= HEAD_SIZE_LIMIT_4) {
       policy_dispatch_func<chunk_policy_head256_b16>(
           queue,
@@ -343,8 +357,15 @@ void cutlass_chunk_prefill_impl(
     policy_dispatch_func<chunk_policy_head128>(
         queue, cuQKType, args, is_paged, is_causal, is_local, is_sink, is_lse);
   } else if (args.head_size <= HEAD_SIZE_LIMIT_3) {
-    policy_dispatch_func<chunk_policy_head192>(
-        queue, cuQKType, args, is_paged, is_causal, is_local, is_sink, is_lse);
+    // Asymmetric QK=192 / V=128 (e.g. MiMo) uses a tile whose output width
+    // follows V; symmetric V=192 keeps the standard policy.
+    if (args.head_size == 192 && args.v_head_size == 128) {
+      policy_dispatch_func<chunk_policy_head192_vo128>(
+          queue, cuQKType, args, is_paged, is_causal, is_local, is_sink, is_lse);
+    } else {
+      policy_dispatch_func<chunk_policy_head192>(
+          queue, cuQKType, args, is_paged, is_causal, is_local, is_sink, is_lse);
+    }
   } else if (args.head_size <= HEAD_SIZE_LIMIT_4) {
     policy_dispatch_func<chunk_policy_head256>(
         queue, cuQKType, args, is_paged, is_causal, is_local, is_sink, is_lse);
