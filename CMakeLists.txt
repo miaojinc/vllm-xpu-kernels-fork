@@ -250,6 +250,9 @@ if(VLLM_GPU_LANG STREQUAL "SYCL")
   set(SYCL_KERNEL_OPTIONS)
 
   list(APPEND SYCL_FLAGS "-fsycl")
+  # For l0 ops like getMemoryInfo
+  list(APPEND SYCL_FLAGS "-lze_loader")
+  list(APPEND SYCL_FLAGS "-Wno-unused-command-line-argument")
 
   set(SYCL_COMPILE_FLAGS ${SYCL_FLAGS})
   set(SYCL_COMPILE_FLAGS ${SYCL_COMPILE_FLAGS} "-O3" "-DNDEBUG")
@@ -264,6 +267,9 @@ if(VLLM_GPU_LANG STREQUAL "SYCL")
   # ============= LINK OPTIONS ==================
   set(SYCL_LINK_FLAGS "")
   list(APPEND SYCL_LINK_FLAGS "-fsycl")
+  # For l0 ops like getMemoryInfo
+  list(APPEND SYCL_LINK_FLAGS "-lze_loader")
+  list(APPEND SYCL_LINK_FLAGS "-Wno-unused-command-line-argument")
   set(SYCL_DEVICE_LINK_FLAGS ${SYCL_LINK_FLAGS})
   set(SYCL_DEVICE_LINK_FLAGS
       ${SYCL_DEVICE_LINK_FLAGS} -fsycl-max-parallel-link-jobs=16
@@ -513,10 +519,12 @@ if(BASIC_KERNELS_ENABLED)
       "csrc/quantization/fp8/fp8_quant.cpp"
       "csrc/quantization/fp4/mxfp4_quant.cpp"
       "csrc/quantization/fused_kernels/fused_silu_mul_block_quant.cpp"
+      "csrc/quantization/fused_kernels/fused_silu_mul_mxfp4_quant.cpp"
       "csrc/xpu_view.cpp"
       "csrc/attention/merge_attn_states.cpp"
       "csrc/tensor_utils.cpp"
       "csrc/utils/mem_cpy.cpp"
+      "csrc/utils/mem_info.cpp"
       "csrc/topk_per_row.cpp")
   include_directories("/usr/include")
 
@@ -594,6 +602,7 @@ if(XPU_SPECIFIC_KERNELS_ENABLED)
       "csrc/xpu/sampler/topk_topp_sampler.cpp"
       "csrc/xpu/sycl/deepseek_scaling_rope.cpp"
       "csrc/xpu/sycl/multimodal_rope.cpp"
+      "csrc/xpu/sycl/apply_rotary_emb.cpp"
       "csrc/xpu/rand/exponential.cpp"
       "csrc/xpu/utils.cpp")
   if(MOE_KERNELS_ENABLED)
@@ -650,8 +659,6 @@ endif()
 if(MOE_KERNELS_ENABLED)
   message(STATUS "Enabling _moe_C extension.")
   file(GLOB VLLM_MOE_EXT_SRC "csrc/moe/*.cpp")
-  # list(REMOVE_ITEM VLLM_MOE_EXT_SRC
-  # ${CMAKE_CURRENT_SOURCE_DIR}/csrc/moe/fused_grouped_topk.cpp)
 
   define_gpu_extension_target(
     _moe_C

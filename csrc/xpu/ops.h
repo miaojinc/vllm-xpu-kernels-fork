@@ -85,6 +85,13 @@ void multimodal_rotary_embedding(
     bool is_neox,
     std::vector<int64_t> mrope_section);  // host int list [num_mrope_sections]
 
+void apply_rotary_emb(
+    torch::Tensor& output,  // [num_tokens, num_heads, head_size]
+    torch::Tensor& input,   // [num_tokens, num_heads, head_size]
+    torch::Tensor& cos,     // [num_tokens, rot_dim/2]
+    torch::Tensor& sin,     // [num_tokens, rot_dim/2]
+    bool is_neox);
+
 #ifdef VLLM_GDN_ENABLED
 void gdn_attention(
     torch::Tensor& core_attn_out,
@@ -117,6 +124,10 @@ void gdn_attention(
     const int64_t tp_size,
     const bool reorder_input);
 #endif
+
+bool is_bmg_g21(int64_t device_index);
+
+bool is_bmg_g31(int64_t device_index);
 
 bool is_bmg(int64_t device_index);
 
