@@ -1,6 +1,7 @@
 #include <sycl/sycl.hpp>
 
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -844,7 +845,19 @@ void reshape_and_cache_flash(
   int64_t value_page_stride = value_cache.stride(1);
 
   sycl::range<1> grid(num_tokens);
-  sycl::range<1> block(std::min(num_heads * std::max(head_size, v_head_size), 1024));
+  // Right-size the work-group to the *vectorized* element count. The kernel
+  // copies via vectorize_with_alignment<VEC_SIZE>, so only num_elems/VEC_SIZE
+  // threads are ever active. Sizing the WG to num_heads*max_head (the raw
+  // element count) was VEC_SIZE-times oversubscribed (bf16 VEC_SIZE=8 -> 8x
+  // idle threads), starving BMG occupancy and capping memory parallelism.
+  int flash_vec_size = (key.element_size() == 2) ? 8 : 4;
+  int flash_elems = num_heads * std::max(head_size, v_head_size);
+  int flash_wg = (flash_elems + flash_vec_size - 1) / flash_vec_size;
+  if (const char* env_wg = std::getenv("VLLM_CACHE_FLASH_WG")) {
+    flash_wg = std::atoi(env_wg);
+  }
+  flash_wg = std::min(std::max(flash_wg, 32), 1024);
+  sycl::range<1> block(flash_wg);
   const at::DeviceGuard device_guard(key.device());
   auto& queue = vllm::xpu::vllmGetQueue();
 
