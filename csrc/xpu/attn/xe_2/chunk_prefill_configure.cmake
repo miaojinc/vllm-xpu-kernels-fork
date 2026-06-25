@@ -75,12 +75,15 @@ function(fmha_forward_configure FILENAME_SUFFIX)
       "chunk_policy_head96"
       "chunk_policy_head128"
       "chunk_policy_head192"
+      "chunk_policy_head192_vo128"
+      "chunk_policy_head192_vo128_q128"
       "chunk_policy_head256"
       "chunk_policy_head512"
       "chunk_policy_head64_b16"
       "chunk_policy_head96_b16"
       "chunk_policy_head128_b16"
       "chunk_policy_head192_b16"
+      "chunk_policy_head192_vo128_b16"
       "chunk_policy_head256_b16"
       "chunk_policy_head512_b16")
 
@@ -91,12 +94,15 @@ function(fmha_forward_configure FILENAME_SUFFIX)
   set(std_policy_192 "chunk_policy_head192")
   set(std_policy_256 "chunk_policy_head256")
   set(std_policy_512 "chunk_policy_head512")
+  set(extra_std_policies_192 "chunk_policy_head192_vo128"
+                             "chunk_policy_head192_vo128_q128")
   set(b16_policy_64 "chunk_policy_head64_b16")
   set(b16_policy_96 "chunk_policy_head96_b16")
   set(b16_policy_128 "chunk_policy_head128_b16")
   set(b16_policy_192 "chunk_policy_head192_b16")
   set(b16_policy_256 "chunk_policy_head256_b16")
   set(b16_policy_512 "chunk_policy_head512_b16")
+  set(extra_b16_policies_192 "chunk_policy_head192_vo128_b16")
 
   set(IMPL_KV_T "fp16")
 
@@ -204,6 +210,20 @@ function(fmha_forward_configure FILENAME_SUFFIX)
           BUILD_TUPLES
           "${b16_policy_${_headsize}}|${_paged}|${_causal}|${_local}|${_sink}|${_lse}"
         )
+        foreach(_extra_policy ${extra_std_policies_${_headsize}})
+          list(
+            APPEND
+            BUILD_TUPLES
+            "${_extra_policy}|${_paged}|${_causal}|${_local}|${_sink}|${_lse}"
+          )
+        endforeach()
+        foreach(_extra_policy ${extra_b16_policies_${_headsize}})
+          list(
+            APPEND
+            BUILD_TUPLES
+            "${_extra_policy}|${_paged}|${_causal}|${_local}|${_sink}|${_lse}"
+          )
+        endforeach()
       else()
         # No booleans specified: generate all 18 valid combinations
         foreach(IMPL_KISPAGED ${L_BOOLS})
@@ -227,6 +247,20 @@ function(fmha_forward_configure FILENAME_SUFFIX)
                     BUILD_TUPLES
                     "${b16_policy_${_headsize}}|${IMPL_KISPAGED}|${IMPL_KISCAUSAL}|${IMPL_KISLOCAL}|${IMPL_KISSINK}|${IMPL_KISLSE}"
                   )
+                  foreach(_extra_policy ${extra_std_policies_${_headsize}})
+                    list(
+                      APPEND
+                      BUILD_TUPLES
+                      "${_extra_policy}|${IMPL_KISPAGED}|${IMPL_KISCAUSAL}|${IMPL_KISLOCAL}|${IMPL_KISSINK}|${IMPL_KISLSE}"
+                    )
+                  endforeach()
+                  foreach(_extra_policy ${extra_b16_policies_${_headsize}})
+                    list(
+                      APPEND
+                      BUILD_TUPLES
+                      "${_extra_policy}|${IMPL_KISPAGED}|${IMPL_KISCAUSAL}|${IMPL_KISLOCAL}|${IMPL_KISSINK}|${IMPL_KISLSE}"
+                    )
+                  endforeach()
                 endforeach()
               endforeach()
             endforeach()
